@@ -1,0 +1,14 @@
+import numpy
+import node_generator
+
+def closest_node(current_loc):
+    print "got here"
+    this = current_loc
+    node_locs = node_generator.cord
+    node_names = node_generator.cordname
+    for i in range(len(node_locs)):
+        node_to_check = numpy
+        dist[i] = numpy.linalg.norm(current_loc - node_locs[i])
+    return
+
+closest_node([1,1])
