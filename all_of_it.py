@@ -105,11 +105,11 @@ def gpsgo():
 				pt=int(GPS_DATA[10])
 				dx=int(GPS_DATA[13])
 				dy=int(GPS_DATA[13])
-		
+				dt=int(90)
 			
 				ROB_DATA=[rx,ry,rt]
 				PSG_DATA=[px,py,pt]
-				DES_DATA=[dx,dy]
+				DES_DATA=[dx,dy,dt]
 				D1.append(ROB_DATA)
 				D2.append(PSG_DATA)
 				D3.append(DES_DATA)
