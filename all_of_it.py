@@ -1,14 +1,242 @@
 #Takes the input of the node from the Mathattan map and generats the corresponding node values for the MAP Vectors
-
-
+from collections import defaultdict
+from heapq import *
+import RFM69
+from RFM69registers import *
+import datetime
 import random
 import sys
 import os
 import numpy as np
+import smbus
+import time
 
 sys.path.append('/home/pi/MAPPING')
 
 ##-------------------------------------------------------------------
+test = RFM69.RFM69(RF69_915MHZ, 2, 10, True)
+
+# for RPI version 1, use "bus = smbus.SMBus(0)"	
+bus = smbus.SMBus(1)
+
+	# This is the address we setup in the Arduino Program
+	#Slave Address 1
+address = 0x04
+
+#_____________________________________________________________________________________________________________________________
+
+def writeNumber(value):
+    bus.write_byte(address, value)
+
+    # bus.write_byte_data(address, 0, value)
+    return -1
+
+def readarduino():
+	
+    # number = bus.read_byte(address)
+    number = bus.read_i2c_block_data(address,0,16)
+    print("reading information from arduino")
+    print(number)
+    time.sleep(.01)
+    return number
+ 
+def listen():
+	DEC=0
+	while (DEC==0):
+		dec=readarduino()
+		print (dec[0])
+		if dec[0]==49:
+			DEC=dec
+			print 'works'
+		else: 
+			print 'not yet'
+		
+
+def speakpi(data):
+
+		#Receives the data from the User
+		#data = raw_input("Enter the data to be sent : ")
+	data_list = list(data)
+	for i in data_list:
+		#Sends to the Slaves 
+		writeNumber(int(ord(i)))
+		time.sleep(.1)
+		writeNumber(int(0x0A))
+
+	return 1
+
+#___________________________________________________________________________________________________________________________________________________________________
+
+def all_same(items):
+	return all(x == items[0] for x in items)
+	
+	
+def gpsgo():	
+  
+	validate=False 
+
+
+
+
+	while (validate==False):
+		test.receiveBegin()
+	   
+									
+		while not test.receiveDone():
+			time.sleep(2)      
+			
+			D1=[]
+			D2=[]
+			D3=[]
+		
+			i=0
+			
+			
+			while (i<=2):
+			
+				GPS=("".join([chr(letter) for letter in test.DATA]))
+				GPS_DATA=GPS.split()
+				
+				rx=int(GPS_DATA[1])
+				ry=int(GPS_DATA[2])
+				rt=int(GPS_DATA[4])
+				px=int(GPS_DATA[7])
+				py=int(GPS_DATA[8])
+				pt=int(GPS_DATA[10])
+				dx=int(GPS_DATA[13])
+				dy=int(GPS_DATA[13])
+		
+			
+				ROB_DATA=[rx,ry,rt]
+				PSG_DATA=[px,py,pt]
+				DES_DATA=[dx,dy]
+				D1.append(ROB_DATA)
+				D2.append(PSG_DATA)
+				D3.append(DES_DATA)
+				
+				i+=1
+		
+			
+		#print "%s from %s RSSI:%s" % ("".join([chr(letter) for letter in test.DATA]), test.SENDERID, test.RSSI)
+		#print(ROB_DATA,PSG_DATA,DES_DATA) 
+		validateROB=all_same(D1)
+		validatePSG=all_same(D2)
+		validateDES=all_same(D3)
+		validateVEC=[validateROB,validatePSG,validateDES]
+		validate=all_same(validateVEC)
+		#print(validateVEC)
+		#print(validate)
+		
+		
+		
+		if test.ACKRequested():
+			test.sendACK()
+	#print "shutting down"
+	test.shutdown()
+	return np.array([ROB_DATA,PSG_DATA,DES_DATA])
+	
+
+#______________________________________________________________________________________________________
+
+
+def dijkstra(f, t):
+	edges = [
+			('a1', 'b1', 1),
+            ('a2', 'a1', 1),
+            ('a3', 'b3', 1),
+            ('a3', 'a2', 1),
+            ('a4', 'a3', 1),
+            ('b1', 'c1', 1),
+            ('b2', 'a2', 1),
+            ('b3', 'c3', 1),
+            ('b4', 'a4', 1),
+            ('c1', 'd1', 1),
+            ('c1', 'f1', 1),
+            ('c2', 'b2', 1),
+            ('c3', 'd3', 1),
+            ('c3', 'f3', 1),
+            ('c4', 'b4', 1),
+            ('d1', 'd2', 1),
+            ('d1', 'f1', 1),
+            ('d2', 'd3', 1),
+            ('d2', 'f3', 1),
+            ('d3', 'd4', 1),
+            ('d4', 'c4', 1),
+            ('e1', 'f1', 1),
+            ('e2', 'e1', 1),
+            ('e3', 'e2', 1),
+            ('e3', 'f3', 1),
+            ('e3', 'c2', 1),
+            ('e4', 'e3', 1),
+            ('f1', 'g1', 1),
+            ('f2', 'd3', 1),
+            ('f2', 'c2', 1), 
+            ('f2', 'e2', 1),
+            ('f3', 'g3', 1),
+            ('f4', 'e4', 1),
+            ('f4', 'c4', 1),
+            ('g1', 'i1', 1),
+            ('g2', 'f2', 1),
+            ('g3', 'h2', 1),
+            ('g3', 'i3', 1),
+            ('g4', 'f4', 1),
+            ('h1', 'i4', 1),
+            ('h2', 'h1', 1),
+            ('h3', 'h2', 1),
+            ('h3', 'i3', 1),
+            ('h4', 'h3', 1),
+            ('i1', 'j1', 1),
+            ('i2', 'g2', 1),
+            ('i2', 'h2', 1),
+            ('i3', 'j3', 1),
+            ('i4', 'h4', 1),
+            ('i4', 'g4', 1),
+            ('j1', 'k1', 1),
+            ('j2', 'i2', 1),
+            ('j3', 'k3', 1),
+            ('j4', 'i4', 1),
+            ('k1', 'k2', 1),
+            ('k2', 'j2', 1),
+            ('k2', 'k3', 1),
+            ('k3', 'k4', 1),
+            ('k4', 'j4', 1)
+             ]
+             
+	g = defaultdict(list)
+	for l,r,c in edges:
+		g[l].append((c,r))
+
+	q, seen = [(0,f,())], set()
+	while q:
+		(cost,v1,path) = heappop(q)
+		if v1 not in seen:
+			seen.add(v1)
+			path = (v1, path)
+			
+			if v1 == t: 
+				return (path)
+
+			for c, v2 in g.get(v1, ()):
+				if v2 not in seen:
+					heappush(q, (cost+c, v2, path))
+
+	return float("inf")
+#_______________________________________________________________________________________________________________________
+def pathdata(start,end):
+	
+	out = dijkstra(start, end)
+	#print(out)
+	data = {}
+	aux=[]
+	while len(out)>1:
+		aux.append(out[0])
+		out = out[1]
+	
+	aux.reverse()
+	data['path']=aux
+	path=aux
+	return path
+
 
 def nodecreater(X0,Y0,X1,Y1,Xlength,Ylength):
 
